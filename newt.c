@@ -2,14 +2,18 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/ioctl.h>
 #include <termios.h>
 #include <unistd.h>
 
 #define CTRL_KEY(k) ((k) & 0x1f)
 
+struct editorConfig {
+        struct termios orig_termios;
 
-struct termios orig_termios;
+};
 
+struct editorConfig E;
 
 void kill(const char *s) 
 {
@@ -22,21 +26,20 @@ void kill(const char *s)
 
 void disableRawMode() 
 {
-        if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios) == -1) {
+        if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &E.orig_termios) == -1) {
                 kill("tcsetattr");
         }
 }
 
 void enableRawMode() 
 {
-        if (tcgetattr(STDIN_FILENO, &orig_termios) == -1) {
+        if (tcgetattr(STDIN_FILENO, &E.orig_termios) == -1) {
                 kill("tcgetattr");
         } 
     
         atexit(disableRawMode);
     
-        struct termios raw = orig_termios;
-    
+        struct termios raw = E.orig_termios; 
         raw.c_iflag &= ~(BRKINT | ICRNL | INPCK | ISTRIP | IXON);
         raw.c_oflag &= ~(OPOST);
         raw.c_cflag |= (CS8);
